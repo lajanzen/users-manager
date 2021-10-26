@@ -5,6 +5,16 @@ const port = 3000;
 
 const users = ['Leon', 'Philipp', 'Marwin', 'Lara'];
 
+app.delete('/api/users/:name', (req, res) => {
+  const userIndex = users.indexOf(req.params.name);
+  if (userIndex !== 1) {
+    users.splice(userIndex, 1);
+    res.send(users);
+  } else {
+    res.status(404).send('Name is unknown');
+  }
+});
+
 app.get('/api/users/:name', (req, res) => {
   const isNameKnown = users.includes(req.params.name);
   if (isNameKnown) {
