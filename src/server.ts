@@ -6,7 +6,12 @@ const port = 3000;
 const users = ['Leon', 'Philipp', 'Marwin', 'Lara'];
 
 app.get('/api/users/:name', (req, res) => {
-  res.send(req.params.name);
+  const isNameKnown = users.includes(req.params.name);
+  if (isNameKnown) {
+    res.send(req.params.name);
+  } else {
+    res.status(404).send('Name is unknown');
+  }
 });
 
 app.get('/api/users', (_req, res) => {
