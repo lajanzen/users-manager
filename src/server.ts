@@ -8,7 +8,9 @@ app.use(express.json());
 const users = ['Leon', 'Philipp', 'Marwin', 'Lara'];
 
 app.post('/api/users', (req, res) => {
-  res.send(req.body.name);
+  const newUser = req.body;
+  users.push(newUser.name);
+  res.send(users);
 });
 
 app.delete('/api/users/:name', (req, res) => {
