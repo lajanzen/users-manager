@@ -9,8 +9,14 @@ const users = ['Leon', 'Philipp', 'Marwin', 'Lara'];
 
 app.post('/api/users', (req, res) => {
   const newUser = req.body;
-  users.push(newUser.name);
-  res.send(users);
+  const doesUserExist = users.includes(newUser.name);
+
+  if (!doesUserExist) {
+    users.push(newUser.name);
+    res.send(users);
+  } else {
+    res.status(409).send('User already exists');
+  }
 });
 
 app.delete('/api/users/:name', (req, res) => {
