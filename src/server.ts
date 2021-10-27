@@ -1,9 +1,14 @@
 import express from 'express';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 const port = 3000;
 
+// Middleware for parsing application/json
 app.use(express.json());
+
+// Middleware for parsing cookies
+app.use(cookieParser());
 
 const users = [
   {
@@ -72,6 +77,31 @@ app.get('/api/users', (_req, res) => {
 
 app.get('/', (_req, res) => {
   res.send('Hello World!');
+});
+
+app.get('/api/me', (req, res) => {
+  const username = req.cookies.username;
+  const foundUser = users.find((user) => user.username === username);
+
+  if (foundUser) {
+    res.send(foundUser);
+  } else {
+    res.status(404).send('User not found');
+  }
+});
+
+app.post('/api/login', (req, res) => {
+  const user = users.find(
+    (user) =>
+      user.username === req.body.username && user.password === req.body.password
+  );
+
+  if (user) {
+    res.setHeader('Set-Cookie', `username=${user.username}`);
+    res.send(`${user.username} is now logged in`);
+  } else {
+    res.status(401).send('Something went wrong');
+  }
 });
 
 app.listen(port, () => {
