@@ -5,23 +5,45 @@ const port = 3000;
 
 app.use(express.json());
 
-const users = ['Leon', 'Philipp', 'Marwin', 'Lara'];
+const users = [
+  {
+    name: 'Leon',
+    username: 'Leon1',
+    password: 'bla',
+  },
+  {
+    name: 'Philipp',
+    username: 'Philipp1',
+    password: 'bla',
+  },
+  {
+    name: 'Marwin',
+    username: 'Marwin1',
+    password: 'bla',
+  },
+  {
+    name: 'Lara',
+    username: 'Lara1',
+    password: 'bla',
+  },
+];
 
 app.post('/api/users', (req, res) => {
   const newUser = req.body;
-  const doesUserExist = users.includes(newUser.name);
-
-  if (!doesUserExist) {
-    users.push(newUser.name);
+  const user = users.find((user) => user.username === req.body.username);
+  if (!user) {
+    users.push(newUser);
     res.send(users);
   } else {
     res.status(409).send('User already exists');
   }
 });
 
-app.delete('/api/users/:name', (req, res) => {
-  const userIndex = users.indexOf(req.params.name);
-  if (userIndex !== 1) {
+app.delete('/api/users/:username', (req, res) => {
+  const userIndex = users.findIndex(
+    (user) => user.username === req.params.username
+  );
+  if (userIndex !== -1) {
     users.splice(userIndex, 1);
     res.send(users);
   } else {
@@ -29,10 +51,10 @@ app.delete('/api/users/:name', (req, res) => {
   }
 });
 
-app.get('/api/users/:name', (req, res) => {
-  const isNameKnown = users.includes(req.params.name);
-  if (isNameKnown) {
-    res.send(req.params.name);
+app.get('/api/users/:username', (req, res) => {
+  const user = users.find((user) => user.username === req.params.username);
+  if (user) {
+    res.send(user);
   } else {
     res.status(404).send('Name is unknown');
   }
