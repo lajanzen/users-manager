@@ -31,6 +31,12 @@ const users = [
 app.post('/api/users', (req, res) => {
   const newUser = req.body;
   const user = users.find((user) => user.username === req.body.username);
+
+  if (!newUser.name || !newUser.username || !newUser.password) {
+    res.status(400).send('Missing information');
+    return;
+  }
+
   if (!user) {
     users.push(newUser);
     res.send(users);
