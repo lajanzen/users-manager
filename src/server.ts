@@ -1,8 +1,16 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import { connectDatabase, getUserCollection } from '../utils/database';
 
 const app = express();
 const port = 3000;
+
+if (!process.env.MONGODB_URL) {
+  throw new Error('No MongoDB dotenv variable');
+}
 
 // Middleware for parsing application/json
 app.use(express.json());
@@ -10,60 +18,40 @@ app.use(express.json());
 // Middleware for parsing cookies
 app.use(cookieParser());
 
-const users = [
-  {
-    name: 'Leon',
-    username: 'Leon1',
-    password: 'bla',
-  },
-  {
-    name: 'Philipp',
-    username: 'Philipp1',
-    password: 'bla',
-  },
-  {
-    name: 'Marwin',
-    username: 'Marwin1',
-    password: 'bla',
-  },
-  {
-    name: 'Lara',
-    username: 'Lara1',
-    password: 'bla',
-  },
-];
-
-app.post('/api/users', (req, res) => {
+app.post('/api/users', async (req, res) => {
   const newUser = req.body;
-  const user = users.find((user) => user.username === req.body.username);
+  const user = await getUserCollection().findOne({
+    username: newUser.username,
+  });
 
   if (!newUser.name || !newUser.username || !newUser.password) {
     res.status(400).send('Missing information');
     return;
   }
-
   if (!user) {
-    users.push(newUser);
-    res.send(users);
+    await getUserCollection().insertOne(newUser);
+    res.send('New user added to MongoDB');
   } else {
     res.status(409).send('User already exists');
   }
 });
 
-app.delete('/api/users/:username', (req, res) => {
-  const userIndex = users.findIndex(
-    (user) => user.username === req.params.username
-  );
-  if (userIndex !== -1) {
-    users.splice(userIndex, 1);
-    res.send(users);
+app.delete('/api/users/:username', async (req, res) => {
+  const user = await getUserCollection().findOne({
+    username: req.params.username,
+  });
+  if (user) {
+    await getUserCollection().deleteOne(user);
+    res.send(`${user.name} has been deleted`);
   } else {
     res.status(404).send('Name is unknown');
   }
 });
 
-app.get('/api/users/:username', (req, res) => {
-  const user = users.find((user) => user.username === req.params.username);
+app.get('/api/users/:username', async (req, res) => {
+  const user = await getUserCollection().findOne({
+    username: req.params.username,
+  });
   if (user) {
     res.send(user);
   } else {
@@ -71,17 +59,18 @@ app.get('/api/users/:username', (req, res) => {
   }
 });
 
-app.get('/api/users', (_req, res) => {
-  res.send(users);
+app.get('/api/users', async (_req, res) => {
+  const allUsers = await getUserCollection().find().toArray();
+  res.send(allUsers);
 });
 
 app.get('/', (_req, res) => {
   res.send('Hello World!');
 });
 
-app.get('/api/me', (req, res) => {
+app.get('/api/me', async (req, res) => {
   const username = req.cookies.username;
-  const foundUser = users.find((user) => user.username === username);
+  const foundUser = await getUserCollection().findOne({ username: username });
 
   if (foundUser) {
     res.send(foundUser);
@@ -90,20 +79,26 @@ app.get('/api/me', (req, res) => {
   }
 });
 
-app.post('/api/login', (req, res) => {
-  const user = users.find(
-    (user) =>
-      user.username === req.body.username && user.password === req.body.password
-  );
+app.post('/api/login', async (req, res) => {
+  const loginUser = req.body;
+  const user = await getUserCollection().findOne({
+    username: loginUser.username,
+  });
 
   if (user) {
-    res.setHeader('Set-Cookie', `username=${user.username}`);
-    res.send(`${user.username} is now logged in`);
+    if (user.password === loginUser.password) {
+      res.setHeader('Set-Cookie', `username=${user.username}`);
+      res.send(`${user.username} is now logged in`);
+    } else {
+      res.status(401).send('Password is not correct');
+    }
   } else {
-    res.status(401).send('Something went wrong');
+    res.status(401).send(`Username ${loginUser.username} unknown`);
   }
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
-});
+connectDatabase(process.env.MONGODB_URL).then(() =>
+  app.listen(port, () => {
+    console.log(`Example app listening at http://localhost:${port}`);
+  })
+);
